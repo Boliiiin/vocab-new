@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import axios from "axios";
 import CurrentFileIndicator from "@/components/CurrentFileIndicator";
 import PageHeader from "@/components/PageHeader";
@@ -16,6 +16,24 @@ export default function Vision() {
   const [result, setResult] = useState(null);
   const [fileName, setFileName] = useState("");
   const [error, setError] = useState(null);
+  const [history, setHistory] = useState([]);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(true);
+
+  useEffect(() => {
+    fetchHistory();
+  }, []);
+
+  const fetchHistory = async () => {
+    try {
+      const response = await axios.get("/api/vision-ai");
+      setHistory(response.data);
+    } catch (error) {
+      console.error("獲取歷史記錄時發生錯誤:", error);
+      setError("獲取歷史記錄失敗");
+    } finally {
+      setIsLoadingHistory(false);
+    }
+  };
 
   const changeHandler = (e) => {
     e.preventDefault();
@@ -43,6 +61,8 @@ export default function Vision() {
         .then((response) => {
           console.log("成功發送到後端", response.data);
           setResult(response.data);
+          // 更新歷史記錄
+          setHistory((prev) => [response.data, ...prev]);
         })
         .catch((error) => {
           console.error("發送到後端時發生錯誤", error);
@@ -119,6 +139,24 @@ export default function Vision() {
             </div>
           )}
           {result && <VocabGenResultCard result={result} />}
+
+          {/* 歷史記錄區域 */}
+          <div className="mt-8">
+            <h2 className="text-2xl font-bold mb-4">歷史記錄</h2>
+            {isLoadingHistory ? (
+              <div className="space-y-4">
+                <VocabGenResultPlaceholder />
+                <VocabGenResultPlaceholder />
+                <VocabGenResultPlaceholder />
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {history.map((item) => (
+                  <VocabGenResultCard key={item.id} result={item} />
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </section>
     </>

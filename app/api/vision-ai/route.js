@@ -1,4 +1,25 @@
 import openai from "@/services/openai";
+import db from "@/services/db";
+
+export async function GET() {
+  try {
+    const visionRef = db.collection("vision-ai");
+    const snapshot = await visionRef.orderBy("createdAt", "desc").get();
+
+    const results = [];
+    snapshot.forEach((doc) => {
+      results.push({
+        id: doc.id,
+        ...doc.data(),
+      });
+    });
+
+    return Response.json(results);
+  } catch (error) {
+    console.error("取得歷史記錄時發生錯誤:", error);
+    return Response.json({ error: "取得歷史記錄失敗" }, { status: 500 });
+  }
+}
 
 export async function POST(req) {
   try {
@@ -65,6 +86,9 @@ export async function POST(req) {
         language: "English",
         createdAt: Date.now(),
       };
+
+      // 儲存到 Firestore
+      await db.collection("vision-ai").add(result);
 
       return Response.json(result);
     } catch (parseError) {
